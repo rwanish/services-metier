@@ -1,6 +1,7 @@
 package comptoirs.dao;
 
 import comptoirs.entity.Categorie;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Setter
 @Log4j2 // Génère le 'logger' pour afficher les messages de trace
 @DataJpaTest
 class CategorieRepositoryTest {
@@ -129,4 +131,5 @@ class CategorieRepositoryTest {
 			categoryDAO.flush(); // flush force la fin de la transaction et la validation des contraintes
 		});
 	}
+
 }
