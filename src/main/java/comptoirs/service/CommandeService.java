@@ -2,7 +2,9 @@ package comptoirs.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.NoSuchElementException;
 
+import comptoirs.entity.Produit;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -106,8 +108,24 @@ public class CommandeService {
      */
     @Transactional
     public Ligne ajouterLigne(int commandeNum, int produitRef, @Positive int quantite) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        Commande commande = commandeDao.findById(commandeNum).orElseThrow(() -> new NoSuchElementException(String.valueOf(commandeNum)));
+        Produit produit = produitDao.findById(produitRef).orElseThrow(() -> new NoSuchElementException(String.valueOf(produitRef)));
+
+        if (0 >= (produit.getUnitesEnStock() - produit.getUnitesCommandees() - quantite)) {
+            throw new IllegalStateException("no more stock");
+        }
+        if (produit.isIndisponible()) {
+            throw new IllegalStateException("product unavailable");
+        }
+        if (commande.getEnvoyeele() != null) {
+            throw new IllegalStateException("already shipped");
+        }
+
+        Ligne nouvelleLigne = new Ligne(commande, produit, quantite);
+        nouvelleLigne.getProduit().setUnitesCommandees(nouvelleLigne.getProduit().getUnitesCommandees() + quantite);
+        ligneDao.save(nouvelleLigne);
+
+        return nouvelleLigne;
     }
 
     /**
@@ -124,13 +142,20 @@ public class CommandeService {
      * dans la commande
      *
      * @param commandeNum la clé de la commande
-     * @return la commande mise à jour
      * @throws java.util.NoSuchElementException si la commande n'existe pas
      * @throws IllegalStateException            si la commande a déjà été envoyée
      */
     @Transactional
-    public Commande enregistreExpedition(int commandeNum) {
+    public void enregistreExpedition(int commandeNum) {
         // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        Commande commande = commandeDao.findById(commandeNum).orElseThrow(() -> new NoSuchElementException(String.valueOf(commandeNum)));
+        if (commande.getEnvoyeele() != null) {
+            throw new IllegalStateException("already shipped");
+        }
+        for(Ligne ligne : commande.getLignes()) {
+            ligne.getProduit().setUnitesEnStock(ligne.getProduit().getUnitesEnStock() - ligne.getQuantite());
+            ligne.getProduit().setUnitesCommandees(ligne.getProduit().getUnitesCommandees() - ligne.getQuantite());
+        }
+        commande.setEnvoyeele(LocalDate.now());
     }
 }
